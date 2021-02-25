@@ -5,6 +5,8 @@ import argparse
 import requests
 from datetime import datetime
 from enum import Enum
+from db import insert
+
 
 _logger = logging.getLogger(__name__)
 
@@ -196,11 +198,29 @@ class Bitrise:
         return builds_for_workflow
 
 
+class SQL:
+    def __init__(self):
+        pass
+
+    def json_to_sql(self, data):
+        return "INSERT INTO bitrise_build_states(project_name, workflow, branch, " \
+               "successes, failures) VALUES " \
+               "('{}', '{}', '{}', '{}', '{}')".format(
+                   data['project_name'],
+                   data['workflow'],
+                   data['branch'],
+                   data['successes'],
+                   data['failures']
+               )
+
+
 def main():
     args = parse_args(sys.argv[1:])
     logging.basicConfig(format='%(message)s', level=logging.DEBUG)
 
     b = Bitrise()
+    s = SQL()
+
     all_apps = b.get_apps()
 
     b.set_app(args.project, all_apps)
@@ -230,6 +250,14 @@ def main():
           .format(aborted_success))
 
     print(*workflows['data'], sep=", ")
+    insert(s.json_to_sql({
+            "project_name": args.project,
+            "workflow": args.workflow,
+            "branch": args.branch,
+            "successes": successes,
+            "failures": failures
+        }
+    ))
 
 
 if __name__ == '__main__':

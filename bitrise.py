@@ -203,15 +203,15 @@ class SQL:
         pass
 
     def json_to_sql(self, data):
-        return "INSERT INTO bitrise_build_states(project_name, workflow, branch, " \
-               "successes, failures) VALUES " \
-               "('{}', '{}', '{}', '{}', '{}')".format(
-                   data['project_name'],
-                   data['workflow'],
-                   data['branch'],
-                   data['successes'],
-                   data['failures']
-               )
+        return "INSERT INTO bitrise_build_states(project_name, workflow, " \
+               "branch, build_status, build_status_count) VALUES " \
+                "('{}', '{}', '{}', '{}', '{}')".format(
+                    data['project_name'],
+                    data['workflow'],
+                    data['branch'],
+                    data['build_status'],
+                    data['build_status_count']
+                )
 
 
 def main():
@@ -250,14 +250,23 @@ def main():
           .format(aborted_success))
 
     print(*workflows['data'], sep=", ")
+    
+    _logger.debug("Inserting SQL statements")
     insert(s.json_to_sql({
-            "project_name": args.project,
-            "workflow": args.workflow,
-            "branch": args.branch,
-            "successes": successes,
-            "failures": failures
-        }
-    ))
+        "project_name": args.project,
+        "workflow": args.workflow,
+        "branch": args.branch,
+        "build_status": Status.SUCCESSFUL.name.lower(),
+        "build_status_count": successes
+    }))
+    
+    insert(s.json_to_sql({
+        "project_name": args.project,
+        "workflow": args.workflow,
+        "branch": args.branch,
+        "build_status": Status.FAILURE.name.lower(),
+        "build_status_count": failures
+    }))
 
 
 if __name__ == '__main__':
